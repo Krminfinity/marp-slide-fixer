@@ -1,0 +1,8 @@
+{
+  "maxIter": 3,
+  "paragraphMaxChars": 600,
+  "listMaxItems": 10,
+  "fontStep": 0.95,
+  "fontMin": 0.7,
+  "logLevel": "info"
+}

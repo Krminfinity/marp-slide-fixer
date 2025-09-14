@@ -7,7 +7,7 @@ import remarkStringify from 'remark-stringify';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import { visit } from 'unist-util-visit';
-import { SPLITTABLE_NODES, SENTENCE_ENDINGS } from './config.js';
+import { SENTENCE_ENDINGS } from './config.js';
 
 /**
  * MarkdownをASTに変換
@@ -332,6 +332,7 @@ export function updateFrontmatter(frontmatterNode, newStyle) {
   const lines = frontmatterNode.value.split('\n');
   let styleLineIndex = -1;
   let inStyleSection = false;
+  let existingStyles = [];
 
   // 既存のstyleセクションを探す
   for (let i = 0; i < lines.length; i++) {
@@ -339,8 +340,22 @@ export function updateFrontmatter(frontmatterNode, newStyle) {
     if (line.startsWith('style:')) {
       styleLineIndex = i;
       inStyleSection = true;
+      // 次行以降インデント付き行を収集
+      for (let j = i + 1; j < lines.length; j++) {
+        const l = lines[j];
+        if (/^\s{2,}\S/.test(l)) {
+          existingStyles.push(l.replace(/^\s+/, ''));
+        } else {
+          break;
+        }
+      }
       break;
     }
+  }
+
+  // 既に同じスタイルが存在する場合は何もしない
+  if (existingStyles.includes(newStyle.trim())) {
+    return frontmatterNode;
   }
 
   if (styleLineIndex === -1) {

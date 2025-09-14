@@ -8,7 +8,8 @@ import chalk from 'chalk';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { SlideFixer } from '../src/pipeline.js';
-import { createConfig } from '../src/config.js';
+import { createConfig } from '../src/config.js'; // fallback 用（将来拡張余地）
+import { loadMergedConfig } from '../src/configLoader.js';
 
 const program = new Command();
 
@@ -30,10 +31,11 @@ async function main() {
       .option('--paragraph-max-chars <number>', '段落文字数分割しきい値', '600')
       .option('--font-step <number>', 'フォント縮小ステップ', '0.95')
       .option('--font-min <number>', 'フォント最小サイズ', '0.7')
-      .option('--log-level <level>', 'ログレベル', 'info');
+      .option('--log-level <level>', 'ログレベル', 'info')
+      .option('--config <path>', '設定ファイルパス (slide-fixer.config.json などを上書き)');
 
     program.parse();
-    const options = program.opts();
+  const options = program.opts();
 
     // 入力検証
     try {
@@ -47,18 +49,22 @@ async function main() {
     const outputDir = path.dirname(options.out);
     await fs.mkdir(outputDir, { recursive: true });
 
-    // 設定オブジェクト作成
-    const config = createConfig({
-      maxIter: parseInt(options.maxIter),
-      listMaxItems: parseInt(options.listMaxItems),
-      paragraphMaxChars: parseInt(options.paragraphMaxChars),
-      fontStep: parseFloat(options.fontStep),
-      fontMin: parseFloat(options.fontMin),
+    // 設定マージ (ファイル + CLI)
+    const { config, configFile } = await loadMergedConfig({
+      configPath: options.config,
+      maxIter: options.maxIter,
+      listMaxItems: options.listMaxItems,
+      paragraphMaxChars: options.paragraphMaxChars,
+      fontStep: options.fontStep,
+      fontMin: options.fontMin,
       logLevel: options.logLevel,
       tempDir: path.join(process.cwd(), '.marp-slide-fixer-temp')
     });
 
     console.log(chalk.cyan('⚙️  Configuration:'));
+    if (configFile) {
+      console.log(chalk.gray(`   • Loaded from: ${configFile}`));
+    }
     console.log(chalk.gray(`   • Max iterations: ${config.maxIter}`));
     console.log(chalk.gray(`   • List split threshold: ${config.listMaxItems} items`));
     console.log(chalk.gray(`   • Paragraph split threshold: ${config.paragraphMaxChars} chars`));

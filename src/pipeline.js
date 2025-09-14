@@ -49,6 +49,14 @@ export class SlideFixer {
       let slides = extractSlides(ast);
       this.stats.totalSlides = slides.length;
 
+      // Marp front-matter 検証: 最初のスライドに front-matter が存在し、marp: true もしくは theme/size/paginate のいずれかが存在
+      const firstFront = slides[0]?.frontmatter?.value || '';
+      const hasMarpKey = /(^|\n)marp:\s*true\b/.test(firstFront);
+      const hasTheme = /(^|\n)theme:\s*.+/.test(firstFront);
+      if (!firstFront || !(hasMarpKey || hasTheme)) {
+        throw new Error('Input is not a valid Marp markdown (front-matter with at least `marp: true` or `theme:` required).');
+      }
+
       console.log(chalk.cyan(`📊 Found ${slides.length} slides to process`));
 
       // 反復処理
@@ -175,31 +183,27 @@ export class SlideFixer {
     let scalingType = 'none';
     let modifiedSlide = { ...slide };
 
-    // 局所的な縮小を試行
+    // まず局所的な縮小を試行
     const localScaling = this.getLocalScalingStyle(overflowResult);
     if (localScaling) {
       modifiedSlide = this.applyLocalScaling(modifiedSlide, localScaling);
       modified = true;
       scalingType = 'local';
       console.log(chalk.gray(`   Applied local scaling: ${localScaling.type}`));
+      // ポリシー: 局所縮小を適用したイテレーションでは、即座に全体縮小を適用せず次の再計測に委ねる
+      return { applied: modified, type: scalingType, modifiedSlide };
     }
 
-    // 局所縮小で解決しない場合、全体縮小
-    if (!modified || this.shouldApplyGlobalScaling(overflowResult)) {
-      const globalScaling = this.calculateGlobalScaling(overflowResult);
-      if (globalScaling.fontSize < 1.0) {
-        modifiedSlide = this.applyGlobalScaling(modifiedSlide, globalScaling.fontSize);
-        modified = true;
-        scalingType = 'global';
-        console.log(chalk.gray(`   Applied global scaling: ${Math.round(globalScaling.fontSize * 100)}%`));
-      }
+    // 局所縮小手段が無い場合にのみ全体縮小を検討
+    const globalScaling = this.calculateGlobalScaling(overflowResult);
+    if (globalScaling.fontSize < 1.0 && this.shouldApplyGlobalScaling(overflowResult)) {
+      modifiedSlide = this.applyGlobalScaling(modifiedSlide, globalScaling.fontSize);
+      modified = true;
+      scalingType = 'global';
+      console.log(chalk.gray(`   Applied global scaling: ${Math.round(globalScaling.fontSize * 100)}%`));
     }
 
-    return {
-      applied: modified,
-      type: scalingType,
-      modifiedSlide
-    };
+    return { applied: modified, type: scalingType, modifiedSlide };
   }
 
   /**
@@ -230,8 +234,6 @@ export class SlideFixer {
     // front-matterにスタイルを追加
     if (slide.frontmatter) {
       slide.frontmatter = updateFrontmatter(slide.frontmatter, scaling.style);
-    } else {
-      slide.frontmatter = updateFrontmatter(null, scaling.style);
     }
 
     return slide;
@@ -279,8 +281,6 @@ export class SlideFixer {
     // front-matterにスタイルを追加
     if (slide.frontmatter) {
       slide.frontmatter = updateFrontmatter(slide.frontmatter, style);
-    } else {
-      slide.frontmatter = updateFrontmatter(null, style);
     }
 
     return slide;
