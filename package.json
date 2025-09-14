@@ -1,17 +1,18 @@
 {
   "name": "marp-slide-fixer",
   "version": "1.0.0",
-  "description": "Marpスライドのoverflow自動検知・修正ツール",
+  "description": "Marpスライドのoverflow自動検知・自然分割&段階的縮小による修正CLI",
   "type": "module",
-  "main": "src/index.js",
+  "main": "src/pipeline.js",
   "bin": {
-    "slide-fixer": "./bin/slide-fixer.js"
+    "slide-fixer": "./bin/slide-fixer.js",
+    "marp-slide-fixer": "./bin/slide-fixer.js"
   },
   "scripts": {
     "start": "node bin/slide-fixer.js",
     "test": "vitest run",
     "test:watch": "vitest",
-  "test:e2e": "powershell -Command \"$env:VITEST_E2E=1; node node_modules/vitest/vitest.mjs run test/e2e.test.js\"",
+    "test:e2e": "powershell -Command \"$env:VITEST_E2E=1; node node_modules/vitest/vitest.mjs run test/e2e.test.js\"",
     "lint": "echo \"No linting configured\" && exit 0"
   },
   "keywords": [
@@ -19,10 +20,26 @@
     "markdown",
     "slides",
     "overflow",
-    "cli"
+    "cli",
+    "auto-fix"
   ],
-  "author": "",
+  "author": "Makoto Kuramochi",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/marp-slide-fixer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/marp-slide-fixer/issues"
+  },
+  "homepage": "https://github.com/your-org/marp-slide-fixer#readme",
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE",
+    "slide-fixer.config.json"
+  ],
   "dependencies": {
     "remark": "^15.0.1",
     "remark-parse": "^11.0.0",

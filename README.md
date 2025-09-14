@@ -3,13 +3,14 @@
 Marp の Markdown ファイル専用で、はみ出し（overflow）を自動検知し「スライドの自然な分割」を最優先として修正した Markdown を出力する CLI ツールです。プレーン Markdown（Marp front‑matter を持たないもの）は処理対象外です。
 
 ## 主な特徴 (Current Capabilities)
-- **設定ファイル対応（追加予定 / 一部実装）**: `slide-fixer.config.json` をルートに置くと CLI オプション省略が可能（`--config` で明示指定も可）
+- **設定ファイル対応（完了）**: ルートの `slide-fixer.config.{json,js,mjs,cjs}` を自動検出しマージ（`--config` で明示指定可 / CLI引数が最優先）
 ## 他リポジトリでの利用ガイド (Integration Quick Start)
 
 ### 1. npx で単発実行
 ```bash
 npx marp-slide-fixer --in slides.md --out slides.fixed.md
 ```
+エイリアス: `npx slide-fixer ...` も使用可能
 
 ### 2. 開発依存として導入
 ```bash
@@ -25,7 +26,7 @@ npm install --save-dev marp-slide-fixer @marp-team/marp-cli
 ```
 
 ### 3. 設定ファイル (オプション)
-プロジェクトルートに `slide-fixer.config.json` を追加:
+プロジェクトルートに `slide-fixer.config.json`（または `.mjs` / `.cjs` / `.js`）を追加:
 ```json
 {
   "maxIter": 3,
