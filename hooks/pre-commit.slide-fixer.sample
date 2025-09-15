@@ -1,0 +1,27 @@
+#!/bin/sh
+# Sample pre-commit hook for marp-slide-fixer
+# Copy to .git/hooks/pre-commit or integrate with Husky
+
+CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.md$' || true)
+[ -z "$CHANGED" ] && exit 0
+
+STATUS=0
+TMP_DIR=".tmp-slide-fixer"
+mkdir -p "$TMP_DIR"
+
+for f in $CHANGED; do
+  if grep -qE '^---' "$f" && grep -qE '^---[\s\S]*?(marp:\s*true|theme:)' "$f"; then
+    OUT="$TMP_DIR/$(echo "$f" | tr '/' '_').fixed"
+    npx slide-fixer --in "$f" --out "$OUT" --max-iter 2 >/dev/null 2>&1 || { echo "[skip] $f (error)"; STATUS=1; continue; }
+    if ! diff -q "$f" "$OUT" >/dev/null; then
+      mv "$OUT" "$f"
+      git add "$f"
+      echo "[fixed] $f"
+    else
+      rm "$OUT"
+      echo "[clean] $f"
+    fi
+  fi
+done
+
+exit $STATUS

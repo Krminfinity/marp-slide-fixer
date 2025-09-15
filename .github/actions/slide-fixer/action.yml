@@ -1,0 +1,57 @@
+name: 'Marp Slide Fixer'
+description: 'Run marp-slide-fixer to auto-split and adjust overflow in Marp markdown slides'
+author: 'Marp Slide Fixer Contributors'
+branding:
+  icon: 'sliders'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'Target markdown file (single)'
+    required: true
+  out:
+    description: 'Output file path (will overwrite logic up to workflow)'
+    required: false
+    default: ''
+  max-iter:
+    description: 'Override max iteration'
+    required: false
+  extra-args:
+    description: 'Additional raw CLI args appended as-is'
+    required: false
+    default: ''
+  install-marp-cli:
+    description: 'If true, also install @marp-team/marp-cli for downstream rendering'
+    required: false
+    default: 'false'
+  node-version:
+    description: 'Node version'
+    required: false
+    default: '20'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs['node-version'] }}
+    - name: Install dependencies
+      shell: bash
+      run: |
+        npm install marp-slide-fixer@latest
+        if [ "${{ inputs.install-marp-cli }}" = "true" ]; then npm install @marp-team/marp-cli; fi
+    - name: Run slide fixer
+      shell: bash
+      run: |
+        OUT_ARG=""
+        if [ -n "${{ inputs.out }}" ]; then OUT_ARG="--out ${{ inputs.out }}"; else OUT_ARG="--out fixed.tmp.md"; fi
+        EXTRA="${{ inputs.extra-args }}"
+        MAXITER="${{ inputs['max-iter'] }}"
+        if [ -n "$MAXITER" ]; then EXTRA="$EXTRA --max-iter $MAXITER"; fi
+        npx slide-fixer --in "${{ inputs.path }}" $OUT_ARG $EXTRA
+    - name: Overwrite original if no explicit out
+      if: ${{ inputs.out == '' }}
+      shell: bash
+      run: |
+        if ! diff -q fixed.tmp.md "${{ inputs.path }}" >/dev/null; then mv fixed.tmp.md "${{ inputs.path }}"; fi
